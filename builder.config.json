@@ -1,0 +1,14 @@
+{
+  "repo": {
+    "enable": true,
+    "url": "git@github-taylor:tay10rb/gallery-assets.git"
+  },
+  "storage": {
+    "provider": "s3"
+  },
+  "performance": {
+    "worker": {
+      "workerCount": 8
+    }
+  }
+}
