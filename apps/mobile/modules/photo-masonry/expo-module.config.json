@@ -1,0 +1,14 @@
+{
+  "platforms": ["apple"],
+  "apple": {
+    "modules": [
+      "PhotoDetailModule",
+      "PhotoMapModule",
+      "PhotoMasonryModule",
+      "PhotoViewerModule",
+      "PhotoSheetsModule",
+      "PhotoUploadModule"
+    ],
+    "appDelegateSubscribers": ["UploadAppDelegateSubscriber"]
+  }
+}
