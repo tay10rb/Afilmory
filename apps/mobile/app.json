@@ -14,6 +14,10 @@
       "bundleIdentifier": "app.afilmory",
       "buildNumber": "1",
       "appleTeamId": "KAMM5N88X3",
+      "entitlements": {
+        "aps-environment": "development",
+        "com.apple.security.application-groups": ["group.app.afilmory"]
+      },
       "config": {
         "usesNonExemptEncryption": false
       },
@@ -59,7 +63,8 @@
             "deploymentTarget": "26.0"
           }
         }
-      ]
+      ],
+      "./plugins/with-share-upload-handoff"
     ],
     "experiments": {
       "typedRoutes": true,

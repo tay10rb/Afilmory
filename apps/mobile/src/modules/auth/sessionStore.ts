@@ -39,15 +39,19 @@ export function useAuth(): AuthState {
   return useSyncExternalStore(subscribe, getSnapshot, getSnapshot)
 }
 
+function setActiveWorkspace(slug: string | null | undefined): void {
+  setActiveTenantSlug(slug)
+}
+
 function resetToSignedOut() {
   setAuthCookie(null)
-  setActiveTenantSlug(null)
+  setActiveWorkspace(null)
   setState({ status: 'signedOut', session: null })
 }
 
 function setSignedIn(session: SessionInfo, cookie: string | null) {
   setAuthCookie(cookie)
-  setActiveTenantSlug(session.activeWorkspace?.slug)
+  setActiveWorkspace(session.activeWorkspace?.slug)
   setState({ status: 'signedIn', session })
 }
 
@@ -119,4 +123,23 @@ export async function switchWorkspace(tenantId: string): Promise<void> {
     throw new Error('The session expired while switching workspaces.')
   }
   setSignedIn(session, cookie)
+}
+
+export async function synchronizeWorkspaceFromNative(slug: string): Promise<void> {
+  setActiveWorkspace(slug)
+  const cookie = getAuthClient().getCookie()
+  if (!cookie) {
+    return
+  }
+
+  try {
+    const session = await fetchSession(cookie)
+    if (session) {
+      setSignedIn(session, cookie)
+    }
+  }
+  catch {
+    // The native session has already switched. Keep the tenant routing correct
+    // and allow the next auth hydration to refresh the JS session snapshot.
+  }
 }

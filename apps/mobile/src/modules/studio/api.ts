@@ -8,27 +8,9 @@ import type {
   DashboardOverviewResponse,
   DataSyncConflict,
   DataSyncStatus,
-  PhotoAssetListItem,
-  PhotoAssetSummary,
   SiteSettingKey,
   SiteSettingUiSchemaResponse,
-  StudioHomeData,
 } from './types'
-
-export async function fetchStudioHome(): Promise<StudioHomeData> {
-  const [overview, comments, syncStatus] = await Promise.all([
-    fetchDashboardOverview(),
-    listComments({ limit: 20, status: 'pending' }),
-    getDataSyncStatus(),
-  ])
-
-  return {
-    overview,
-    pendingComments: comments.comments.length,
-    pendingCommentsHasMore: comments.nextCursor !== null,
-    syncStatus,
-  }
-}
 
 export async function fetchDashboardOverview(): Promise<DashboardOverviewResponse> {
   return camelCaseKeys(await tenantApiClient('/dashboard/overview'))
@@ -36,30 +18,6 @@ export async function fetchDashboardOverview(): Promise<DashboardOverviewRespons
 
 export async function fetchDashboardAnalytics(): Promise<DashboardAnalyticsResponse> {
   return camelCaseKeys(await tenantApiClient('/dashboard/analytics'))
-}
-
-export async function listPhotoAssets(): Promise<PhotoAssetListItem[]> {
-  return camelCaseKeys(await tenantApiClient('/photos/assets'))
-}
-
-export async function getPhotoAssetSummary(): Promise<PhotoAssetSummary> {
-  return camelCaseKeys(await tenantApiClient('/photos/assets/summary'))
-}
-
-export async function deletePhotoAssets(ids: string[], deleteFromStorage: boolean): Promise<void> {
-  await tenantApiClient('/photos/assets', {
-    body: { deleteFromStorage, ids },
-    method: 'DELETE',
-  })
-}
-
-export async function updatePhotoAssetTags(id: string, tags: string[]): Promise<PhotoAssetListItem> {
-  return camelCaseKeys(
-    await tenantApiClient(`/photos/assets/${id}/tags`, {
-      body: { tags },
-      method: 'PATCH',
-    }),
-  )
 }
 
 export async function listComments(query: {
