@@ -51,12 +51,12 @@ export interface FeaturedGallery {
 }
 
 export async function fetchFeaturedGalleries(): Promise<FeaturedGallery[]> {
-  const response = await fetch(`${API_BASE}/featured-galleries`, {
+  const response = await fetch(`${API_BASE}/gallery-directory`, {
     method: 'GET',
     headers: { 'content-type': 'application/json' },
   })
   if (!response.ok) {
-    throw new Error(`featured-galleries ${response.status}`)
+    throw new Error(`gallery-directory ${response.status}`)
   }
   const payload = (await response.json()) as { galleries?: FeaturedGallery[] }
   return payload.galleries ?? []
@@ -68,4 +68,8 @@ export function galleryPublicUrl(gallery: FeaturedGallery): string {
     return `https://${host}`
   }
   return `https://${gallery.slug}.afilmory.art`
+}
+
+export function tenantLoginUrl(slug: string): string {
+  return `https://${slug}.afilmory.art/platform/login`
 }

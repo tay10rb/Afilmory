@@ -37,4 +37,13 @@ yarn-error.*
 # generated native folders
 /ios
 /android
-/modules/photo-masonry/ios/Resources/Locales/
+/Afilmory/Resources/Locales/
+
+# APNs sandbox verification derived data
+.derived-apns-sandbox/
+
+# Offline UI catalog output
+.ui-catalog/
+
+# Generated binary assets (scripts/prepare-assets.sh)
+Afilmory/Fixtures/Media/

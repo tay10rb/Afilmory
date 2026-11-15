@@ -6,10 +6,12 @@ export interface Translations {
     description: string
   }
   nav: {
+    features?: string
     demo: string
     discover: string
     docs: string
     github: string
+    login: string
     create: string
     lang: string
   }
@@ -18,8 +20,41 @@ export interface Translations {
     title: string
     subtitle: string
     cta: string
+    login: string
     secondary: string
     note: string
+    appStoreEyebrow: string
+    appStore: string
+  }
+  bento: {
+    eyebrow: string
+    title: string
+    subtitle: string
+    exif: {
+      badge: string
+      title: string
+      description: string
+    }
+    color: {
+      badge: string
+      title: string
+      description: string
+    }
+    live: {
+      badge: string
+      title: string
+      description: string
+    }
+    map: {
+      badge: string
+      title: string
+      description: string
+    }
+    arch: {
+      badge: string
+      title: string
+      description: string
+    }
   }
   demo: {
     label: string
@@ -69,6 +104,21 @@ export interface Translations {
       missingRedirect: string
     }
   }
+  loginModal: {
+    label: string
+    title: string
+    description: string
+    inputLabel: string
+    placeholder: string
+    domainSuffix: string
+    button: string
+    close: string
+    validations: {
+      required: string
+      minLength: string
+      invalid: string
+    }
+  }
   discover: {
     label: string
     title: string
@@ -84,6 +134,7 @@ export interface Translations {
     docs: string
     github: string
     selfHost: string
+    appStore: string
     copy: string
   }
 }

@@ -34,10 +34,10 @@ State on `CommentsStore`: `flight: CommentFlight?` (`clientId`, `content`, `orig
 
 1. `send()` captures the complete composer pill frame (reported via `onGeometryChange` in the root coordinate space) as `origin` — skipped entirely under Reduce Motion.
 2. The optimistic row is appended; the view scrolls to it un-animated (`anchor: .bottom`); the landing row (identity == flight clientId) renders at opacity 0 and reports its bubble frame → `target`.
-3. The overlay exists at the full composer geometry immediately, so clearing the real field does not create an empty intermediate frame. A target is eligible only after scroll-to-bottom is no longer pending, its frame is fully above the composer, and it remains unchanged through a short layout-settling window; this prevents an off-screen pre-scroll row frame from being locked intermittently. Once the settled `target` exists, one animatable progress value drives all four rect edges, the 8pt parabolic lift, composer-to-bubble corner radii, secondary-to-accent fill, border removal, text treatment, send-arrow removal, and a midpoint-only shadow. The source is pixel-aligned with the complete composer pill; the destination is pixel-aligned with the real bubble. The flight retains `.timingCurve(0.2, 0.78, 0.2, 1, duration: 0.36)` and `withAnimation(completionCriteria:)` completion.
-4. Completion (or a 900ms fallback, or flight cancellation on failure) clears `flight`, revealing the real row. Send failure removes the optimistic row and restores the draft as today; the flight is cancelled the same way RN's `completeFlight` was.
+3. The overlay exists at the full composer geometry immediately, so clearing the real field does not create an empty intermediate frame. A target is eligible only after scroll-to-bottom is no longer pending, its frame is fully above the composer, and it remains unchanged through a short layout-settling window; this prevents an off-screen pre-scroll row frame from being locked intermittently. Once the settled `target` exists, independent SwiftUI springs reproduce the ChatKit type-1 Glass choreography without private API use: X starts immediately; Y starts 55ms later; both use `mass=1`, `stiffness=141.75909`, and `damping=17.35028`. A scale-down spring starts with X (`mass=2`, `stiffness=310`, `damping=38`) and compresses to a height-dependent factor from 0.7 to 0.9; a reciprocal scale-up spring (`mass=2`, `stiffness=320`, `damping=38`) begins at 185ms, so the two transforms overlap and settle back to identity. Reduce Motion uses the corresponding critically damped values `23.8125`, `49.7996`, and `50.5964`. The existing 0.4s visual clock remains independent: bounds morph around the trailing-center anchor, bubble opacity reaches 1 in the first third, the source text mask fades over 0.3s, and the send-button snapshot scales to zero over 0.25s. The source and destination remain pixel-aligned with the complete composer pill and real bubble respectively.
+4. Completion (or a settling-duration-derived animation fallback, a 900ms target-acquisition fallback, or flight cancellation on failure) clears `flight`, revealing the real row. Send failure removes the optimistic row and restores the draft as today; the flight is cancelled the same way RN's `completeFlight` was.
 
-The rect derivation and progress interpolation live in a pure `CommentFlightMath` enum so the existing Swift test target covers them.
+The rect derivation, cubic-bezier inversion, right-edge anchoring, and scale composition live in a pure `CommentFlightMath` enum so the Swift test target covers them. The spring choreography lives in `CommentFlightMotion`. The constants are behaviorally derived from static disassembly of the arm64 `ChatKit.framework` in the iOS 26.5 Simulator runtime; no ChatKit symbol or private API is linked or invoked. This reproduces the type-1 Glass motion, while the settled composer and bubbles intentionally retain their existing solid system-fill surfaces.
 
 ### Composer (RN parity)
 
@@ -54,10 +54,10 @@ Pill restyled to RN: hairline-bordered `bgElement` pill containing the multiline
 
 ## Testing
 
-1. Swift unit tests: `CommentFlightMath` (full composer and destination handoff endpoints, simultaneous rect shrink/translation midpoint, arc and shadow interpolation), existing `CommentsStateTests` untouched.
+1. Swift unit tests: `CommentFlightMath` (full composer and destination handoff endpoints, independent position channels, spring overshoot geometry, adaptive compression, and reciprocal scale composition), existing `CommentsStateTests` untouched.
 2. `pod install` (new .swift files), build, `pnpm --filter @afilmory/mobile type-check` + scoped lint for the RN edits.
-3. Simulator, driven via axe from the lab scenario: bubble rendering both directions, send flight frame-by-frame (recording), failure rollback restoring the draft, Reduce Motion path landing without flight.
+3. Simulator Comment Lab: bubble rendering in both directions, frame-by-frame send-flight recording, failure rollback restoring the draft, and the critically damped Reduce Motion path.
 
 ## Out of scope
 
-Header/nav chrome redesign, StudioCommentsScreen, comment editing/deletion, backend changes, initial scroll-to-bottom on open (RN didn't do it; not invented here).
+Header/nav chrome redesign, applying a Glass material to the composer or settled bubbles, StudioCommentsScreen, comment editing/deletion, backend changes, initial scroll-to-bottom on open (RN didn't do it; not invented here).

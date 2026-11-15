@@ -1,13 +1,42 @@
 # iOS Release
 
-CI: `.github/workflows/mobile-testflight.yml` — prebuild → archive → upload to TestFlight.
+CI: `.github/workflows/mobile-testflight.yml` — XcodeGen → SwiftPM resolution → archive → TestFlight upload.
 Trigger: push a `mobile-v*` tag, or run manually via workflow_dispatch.
+
+Build with Xcode 27.1 or later for the iPhone Duo hinge and reserved-region APIs.
+The deployment target is iOS 26; earlier iOS versions are not supported.
+TestFlight CI uses the `xcode-27` runner, pins Xcode 27.1, and verifies the iOS 27.1
+device SDK before archiving. `macos-26` does not include this toolchain.
+
+## Local simulator variant
+
+The Xcode project exposes two independently installable schemes from the same Swift sources.
+
+| Variant | Command | Bundle ID | Default API |
+| --- | --- | --- | --- |
+| Production | `pnpm --filter @afilmory/mobile ios:production` | `app.afilmory` | `https://api.afilmory.art` |
+| Local | `pnpm --filter @afilmory/mobile ios:local` | `app.afilmory.local` | `http://localhost:1841` |
+
+Both commands synchronize localization resources, regenerate `Afilmory.xcodeproj`, and resolve the
+SwiftPM dependency graph. The Local scheme carries only its default Keychain access group and
+disables Sign in with Apple, push registration, shared-upload handoff, Live Activity creation, and
+StoreKit sponsorship. Use the local password account for development testing.
+
+Run `pnpm --filter @afilmory/mobile native:test` for the Swift behavior suite.
 
 ## One-time setup
 
 ### Apple Developer portal ([developer.apple.com](https://developer.apple.com/account))
 
-1. **Identifiers → +** — register App ID `app.afilmory` (explicit, no extra capabilities).
+1. **Identifiers → +** — register App ID `app.afilmory` (explicit) and enable
+   **Sign in with Apple**, **Push Notifications**, and **Communication
+   Notifications**. Also register `app.afilmory.notification` for the
+   Notification Service Extension and enable **Communication Notifications** on
+   it (Developer portal / Xcode; the public App Store Connect capability enum
+   does not include this type). After the capability is on both App IDs, recreate
+   App Store profiles and store them as `IOS_APPSTORE_PROFILE` and
+   `IOS_NOTIFICATION_APPSTORE_PROFILE`. CI import asserts
+   `com.apple.developer.usernotifications.communication` on both.
 2. **Certificates** — create an **Apple Distribution** certificate. Easiest via Xcode:
    Settings → Accounts → team → Manage Certificates → + → Apple Distribution.
    Then export it from Keychain Access as `.p12` with a password.
@@ -15,6 +44,17 @@ Trigger: push a `mobile-v*` tag, or run manually via workflow_dispatch.
 No provisioning profiles to create: CI archives with automatic signing
 (`-allowProvisioningUpdates` + the ASC API key), so Xcode registers the App ID and
 fetches a profile for every target — app and extensions alike — at build time.
+
+### Sign in with Apple backend
+
+1. Create a Sign in with Apple key for the same Apple Developer team and record
+   its Team ID and Key ID.
+2. Store the raw `.p8` value as the deployment secret `APPLE_PRIVATE_KEY`.
+3. Configure the non-secret App Bundle ID (`app.afilmory`), Team ID, and Key ID
+   in Super Admin → System Settings. A Services ID is optional and is needed only
+   when Apple login is also enabled for the web dashboard.
+4. Apply the latest Core database migration before enabling the provider. It
+   creates the encrypted Apple authorization and durable account-deletion tables.
 
 ### App Store Connect ([appstoreconnect.apple.com](https://appstoreconnect.apple.com))
 
@@ -42,8 +82,7 @@ submitting a build:
    Connect.
 2. Under **Afilmory → Monetization → In-App Purchases**, create the consumable
    product above and add its required localization and review screenshot.
-3. Test the purchase with a Sandbox Apple Account on a development or TestFlight
-   build. Expo Go cannot load StoreKit purchases.
+3. Test the purchase with a Sandbox Apple Account on a signed development or TestFlight build.
 4. Submit the first in-app purchase together with the app version that exposes
    it, and describe the profile-sheet sponsorship path in App Review notes.
 
@@ -56,17 +95,20 @@ submitting a build:
 | `ASC_KEY_ID` | API key ID |
 | `ASC_ISSUER_ID` | API key issuer ID |
 | `ASC_API_KEY_P8` | raw contents of the `.p8` file |
+| `IOS_NOTIFICATION_APPSTORE_PROFILE` | base64 of the `app.afilmory.notification` App Store profile (must include Communication Notifications) |
 
 ### First submission only
 
 - App Privacy declarations (account data: email/name via sign-in; photos the user uploads).
 - Privacy policy URL + support URL (App Information).
 - Screenshots: 6.9" iPhone set (capture on iPhone Pro Max simulator).
-- App Review: demo account credentials — the app requires sign-in.
+- App Review: provide the seeded email/password review account, representative
+  gallery navigation notes, and a separately documented spare account. Reset or
+  reseed the account after any review pass that exercises in-app deletion.
 
 ## Per release
 
-1. Bump `expo.version` in `app.json` (build number: CI seeds it from the run number,
+1. Bump `MARKETING_VERSION` in `project.yml` (the build number is seeded from the CI run number,
    then Xcode auto-bumps past any build already on ASC via
    `manageAppVersionAndBuildNumber` — collisions with manual Xcode uploads are fine).
 2. Tag and push:
@@ -79,5 +121,5 @@ submitting a build:
    (processing takes 5–30 min). Export compliance is pre-declared
    (`usesNonExemptEncryption: false`), so builds go live for internal testers
    without questions.
-4. Ship to external TestFlight testers first; submit for App Store review from
-   the ASC UI once stable.
+4. Keep TestFlight distribution internal only; do not add builds to external or public groups.
+   Submit for App Store review from the ASC UI after internal validation.

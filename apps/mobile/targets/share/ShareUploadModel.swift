@@ -15,7 +15,6 @@ final class ShareUploadModel: ObservableObject {
   @Published var draft = ""
   @Published var errorMessage: String?
 
-  let localization = ShareLocalization.current
 
   private let onCancel: () -> Void
   private let onComplete: () -> Void
@@ -45,7 +44,7 @@ final class ShareUploadModel: ObservableObject {
     var seen = Set<String>()
     let values = tags + Self.parseTags(draft)
     return values.compactMap { value in
-      let normalized = value.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+      let normalized = value.trimmingCharacters(in: .whitespacesAndNewlines)
       guard !normalized.isEmpty, seen.insert(normalized).inserted else { return nil }
       return normalized
     }.prefix(32).map { $0 }
@@ -101,7 +100,7 @@ final class ShareUploadModel: ObservableObject {
         self.store = store
         for provider in providers {
           try Task.checkCancellation()
-          let item = try await store.stage(provider)
+          let item = try await store.stage(ShareItemProvider(value: provider))
           items.append(item)
           if let previewURL = await store.previewURL(for: item) {
             previewURLs[item.id] = previewURL
@@ -186,14 +185,14 @@ final class ShareUploadModel: ObservableObject {
           }
           isSubmitting = false
           submissionStartedAt = nil
-          errorMessage = receipt.message ?? localization.failedTitle
+          errorMessage = receipt.message ?? String(localized: "Upload could not start")
         }
         if isSubmitting,
            let submissionStartedAt,
            Date.now.timeIntervalSince(submissionStartedAt) >= 120 {
           isSubmitting = false
           self.submissionStartedAt = nil
-          errorMessage = localization.handoffTimeout
+          errorMessage = String(localized: "Afilmory did not confirm the upload queue. Please try again.")
         }
         try? await Task.sleep(for: .milliseconds(200))
       }
@@ -202,7 +201,7 @@ final class ShareUploadModel: ObservableObject {
 
   private static func parseTags(_ value: String) -> [String] {
     value.split(separator: ",").compactMap { part in
-      let normalized = part.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+      let normalized = part.trimmingCharacters(in: .whitespacesAndNewlines)
       return normalized.isEmpty ? nil : normalized
     }
   }
