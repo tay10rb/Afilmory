@@ -1,1 +1,4 @@
-{ "routes": [{ "src": "/[^.]+", "dest": "/", "status": 200 }] }
+{
+  "buildCommand": "sh scripts/build-from-gallery-assets.sh",
+  "routes": [{ "src": "/[^.]+", "dest": "/", "status": 200 }]
+}
